@@ -6,7 +6,8 @@ import '../widgets/completed_task_list.dart';
 import '../widgets/task_input_field.dart';
 
 class TaskListScreen extends StatefulWidget {
-  const TaskListScreen({super.key});
+  final TaskApi taskApi;
+  const TaskListScreen({super.key, required this.taskApi});
 
   @override
   State<TaskListScreen> createState() => _TaskListScreenState();
@@ -26,7 +27,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
   Future<void> _loadTasks() async {
     try {
-      final result = await TaskApi.fetchTasks();
+      final result = await widget.taskApi.fetchTasks();
       setState(() {
         activeTasks = result.where((t) => t.status != 'DONE').toList();
         doneTasks = result.where((t) => t.status == 'DONE').toList();
@@ -45,12 +46,12 @@ class _TaskListScreenState extends State<TaskListScreen> {
       name: name,
       description: '',
       status: 'TODO',
-      createdAt: DateTime.now(),
+      plannedAt: null,
     );
 
     try {
       debugPrint('Добавление задачи: $newTask');
-      await TaskApi.addTask(newTask);
+      await widget.taskApi.addTask(newTask);
       setState(() {
         activeTasks.add(newTask);
         _newTaskController.clear();
@@ -62,14 +63,14 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
   void _toggleStatus(Task task, bool? checked) {
     String newStatus = checked == true ? 'DONE' : 'TODO';
-    TaskApi.setTaskStatus(task.id, newStatus);
+    widget.taskApi.setTaskStatus(task.id, newStatus);
 
     final updated = Task(
       id: task.id,
       name: task.name,
       description: task.description,
       status: newStatus,
-      createdAt: task.createdAt,
+      plannedAt: task.plannedAt,
     );
 
     setState(() {
@@ -116,11 +117,13 @@ class _TaskListScreenState extends State<TaskListScreen> {
                   onStatusToggle: _toggleStatus,
                   onDismiss: _dismissTask,
                   onReorder: _reorderActiveTasks,
+                  taskApi: widget.taskApi,
                 ),
                 const SizedBox(height: 24),
                 CompletedTaskList(
                   tasks: doneTasks,
                   onStatusToggle: _toggleStatus,
+                  taskApi: widget.taskApi,
                 ),
               ],
             ),

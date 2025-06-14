@@ -6,8 +6,14 @@ import '../api/task_api.dart';
 class TaskCard extends StatefulWidget {
   final Task task;
   final ValueChanged<bool?>? onStatusToggle;
+  final TaskApi taskApi;
 
-  const TaskCard({super.key, required this.task, this.onStatusToggle});
+  const TaskCard({
+    super.key,
+    required this.task,
+    this.onStatusToggle,
+    required this.taskApi,
+  });
 
   @override
   State<TaskCard> createState() => _TaskCardState();
@@ -48,7 +54,8 @@ class _TaskCardState extends State<TaskCard> {
   }
 
   void showTaskDetails() {
-    TaskApi.getTaskDetails(widget.task.id)
+    widget.taskApi
+        .getTaskDetails(widget.task.id)
         .then((taskDetails) {
           if (mounted) {
             _showTaskDialog(context, taskDetails);
@@ -66,6 +73,10 @@ class _TaskCardState extends State<TaskCard> {
   @override
   Widget build(BuildContext context) {
     final DateFormat dateFormat = DateFormat.yMMMMd('ru_RU');
+    String dateText = widget.task.plannedAt != null
+        ? 'Планируется: ${dateFormat.format(widget.task.plannedAt!.toLocal())}'
+        : '';
+
     return Card(
       child: ListTile(
         leading: IconButton(
@@ -82,13 +93,15 @@ class _TaskCardState extends State<TaskCard> {
           ),
         ),
         title: Text(widget.task.name),
-        subtitle: Text(
-          dateFormat.format(widget.task.createdAt.toLocal()),
-          style: TextStyle(
-            color: getStatusColor(widget.task.status),
-            fontStyle: FontStyle.italic,
-          ),
-        ),
+        subtitle: dateText != ''
+            ? Text(
+                dateText,
+                style: TextStyle(
+                  color: getStatusColor(widget.task.status),
+                  fontStyle: FontStyle.italic,
+                ),
+              )
+            : null,
         onTap: () {
           showTaskDetails();
         },

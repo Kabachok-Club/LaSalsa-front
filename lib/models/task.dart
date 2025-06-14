@@ -3,7 +3,7 @@ class Task {
   final String name;
   final String description;
   final String status;
-  final DateTime createdAt; 
+  final DateTime? plannedAt; 
 
 
   Task({
@@ -11,7 +11,7 @@ class Task {
     required this.name,
     required this.description,
     required this.status,
-    required this.createdAt,
+    this.plannedAt,
 
     
   });
@@ -22,7 +22,9 @@ class Task {
       name: json['name'] ?? '',
       description: json['description'] ?? '',
       status: json['status'] ?? 'TODO',
-      createdAt: DateTime.parse(json['created_at'] ?? DateTime.now().toIso8601String()),
+      plannedAt: json['planned_at'] != null
+        ?DateTime.parse(json['planned_at'])
+        : null,
     );
   }
 }

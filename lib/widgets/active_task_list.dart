@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import '../models/task.dart';
 import 'task_card.dart';
+import '../api/task_api.dart';
+
 
 class ActiveTaskList extends StatelessWidget {
   final List<Task> tasks;
   final void Function(Task task, bool? checked) onStatusToggle;
   final void Function(int oldIndex, int newIndex) onReorder;
   final void Function(int index) onDismiss;
+  final TaskApi taskApi;
 
   const ActiveTaskList({
     super.key,
@@ -14,6 +17,7 @@ class ActiveTaskList extends StatelessWidget {
     required this.onStatusToggle,
     required this.onReorder,
     required this.onDismiss,
+    required this.taskApi,
   });
 
   @override
@@ -36,6 +40,7 @@ class ActiveTaskList extends StatelessWidget {
                 child: TaskCard(
                   task: tasks[index],
                   onStatusToggle: (checked) => onStatusToggle(tasks[index], checked),
+                  taskApi: taskApi,
                 ),
               ),
           ],

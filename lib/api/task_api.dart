@@ -5,11 +5,13 @@ import '../models/task.dart';
 
 
 class TaskApi {
+  final http.Client client;
+  TaskApi({ required this.client});
   static const String _baseUrl = 'http://localhost:8008';
   static const String _tasksEndpoint = '/tasks';
 
-  static Future<List<Task>> fetchTasks() async {
-    final response = await http.get(Uri.parse('$_baseUrl$_tasksEndpoint'));
+  Future<List<Task>> fetchTasks() async {
+    final response = await client.get(Uri.parse('$_baseUrl$_tasksEndpoint'));
     if (response.statusCode == 200) {
       final List<dynamic> jsonData = json.decode(response.body);
       return jsonData.map((task) => Task.fromJson(task)).toList();
@@ -18,8 +20,8 @@ class TaskApi {
     }
   }
 
-  static Future<void> addTask(Task task) async {
-    final response = await http.post(
+  Future<void> addTask(Task task) async {
+    final response = await client.post(
       Uri.parse('$_baseUrl$_tasksEndpoint'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
@@ -29,13 +31,13 @@ class TaskApi {
         'created_at': DateTime.now().toIso8601String(),
       }),
     );
-    if (response.statusCode != 200) {
+    if (response.statusCode != 201) {
       throw Exception('Failed to add task');
     }
   }
 
-  static Future<Task> getTaskDetails(String taskId) async {
-    final response = await http.get(Uri.parse('$_baseUrl$_tasksEndpoint/$taskId'));
+  Future<Task> getTaskDetails(String taskId) async {
+    final response = await client.get(Uri.parse('$_baseUrl$_tasksEndpoint/$taskId'));
     if (response.statusCode != 200) {
       throw Exception('Failed to load task details');
     }
@@ -43,8 +45,8 @@ class TaskApi {
     return Task.fromJson(json.decode(response.body));
   }
 
-  static Future<void> setTaskStatus(String taskId, String taskStatus) async {
-    final response = await http.patch(Uri.parse('$_baseUrl$_tasksEndpoint/$taskId/status?status=$taskStatus'));
+  Future<void> setTaskStatus(String taskId, String taskStatus) async {
+    final response = await client.patch(Uri.parse('$_baseUrl$_tasksEndpoint/$taskId/status?status=$taskStatus'));
     if (response.statusCode != 200) {
       throw Exception('Failed to update status');
     }
