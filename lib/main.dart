@@ -18,7 +18,7 @@ class LaSalsaApp extends StatelessWidget {
     final httpClient = http.Client();
     final taskApiService = TaskApi(client: httpClient);
     return MaterialApp(
-      title: 'LaSalsa – Таски',
+      title: 'LaSalsa – Задачи',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 43, 78, 233)),
         useMaterial3: true,

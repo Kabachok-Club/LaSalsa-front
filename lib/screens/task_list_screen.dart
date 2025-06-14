@@ -105,7 +105,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('LaSalsa – Мои задачи')),
+      appBar: AppBar(title: const Text('LaSalsa – задачи')),
       body: Column(
         children: [
           Expanded(
