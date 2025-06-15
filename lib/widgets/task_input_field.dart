@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class TaskInputField extends StatelessWidget {
   final TextEditingController controller;
-  final VoidCallback onAdd;
+  final Function(String, DateTime?) onAdd;
+  final DateTime? selectedDate;
+  final VoidCallback onSelectDate;
 
   const TaskInputField({
     super.key,
     required this.controller,
     required this.onAdd,
+    this.selectedDate,
+    required this.onSelectDate,
   });
 
   @override
@@ -19,12 +24,32 @@ class TaskInputField extends StatelessWidget {
           Expanded(
             child: TextField(
               controller: controller,
-              decoration: const InputDecoration(hintText: 'Введите новую задачу'),
-              onSubmitted: (_) => onAdd(),
+              decoration: const InputDecoration(
+                hintText: 'Введите новую задачу',
+              ),
+              onSubmitted: (_) => onAdd(controller.text.trim(), selectedDate),
             ),
           ),
           const SizedBox(width: 8),
-          IconButton(icon: const Icon(Icons.add), onPressed: onAdd),
+          InkWell(
+            // Используем InkWell для обработки нажатия на текст
+            onTap: onSelectDate,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: selectedDate == null
+                  ? const Icon(
+                      Icons.calendar_today,
+                    ) // Показываем иконку, если дата не выбрана
+                  : Text(
+                      DateFormat('yyyy-MM-dd').format(selectedDate!),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => onAdd(controller.text.trim(), selectedDate),
+          ),
         ],
       ),
     );

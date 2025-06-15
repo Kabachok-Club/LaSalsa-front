@@ -31,6 +31,18 @@ class _TaskCardState extends State<TaskCard> {
     }
   }
 
+  Color getPlannedDateColor(DateTime? plannedAt) {
+    if (plannedAt == null) return Colors.grey;
+    final now = DateTime.now();
+    if (plannedAt.isBefore(now)) {
+      return Colors.red; // Просроченная задача
+    } else if (plannedAt.isAfter(now.add(const Duration(days: 7)))) {
+      return Colors.green; // Задача с плановой датой более чем через неделю
+    } else {
+      return Colors.orange; // Задача с плановой датой в ближайшую неделю
+    }
+  }
+
   void _showTaskDialog(BuildContext context, Task taskDetails) {
     showDialog(
       context: context,
@@ -73,9 +85,12 @@ class _TaskCardState extends State<TaskCard> {
   @override
   Widget build(BuildContext context) {
     final DateFormat dateFormat = DateFormat.yMMMMd('ru_RU');
-    String dateText = widget.task.plannedAt != null
-        ? 'Планируется: ${dateFormat.format(widget.task.plannedAt!.toLocal())}'
-        : '';
+    String dateText = '';
+    if ((widget.task.plannedAt != null) && (widget.task.status != 'DONE')) {
+      dateText = 'Планируется: ${dateFormat.format(widget.task.plannedAt!.toLocal())}';
+    } else if (widget.task.closedAt != null) {
+      dateText = 'Завершена: ${dateFormat.format(widget.task.closedAt!.toLocal())}';
+    }
 
     return Card(
       child: ListTile(
@@ -97,7 +112,7 @@ class _TaskCardState extends State<TaskCard> {
             ? Text(
                 dateText,
                 style: TextStyle(
-                  color: getStatusColor(widget.task.status),
+                  color: widget.task.closedAt != null ? Colors.blueAccent : getPlannedDateColor(widget.task.plannedAt),
                   fontStyle: FontStyle.italic,
                 ),
               )

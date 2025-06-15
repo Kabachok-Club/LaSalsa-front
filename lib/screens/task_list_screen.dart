@@ -16,6 +16,7 @@ class TaskListScreen extends StatefulWidget {
 class _TaskListScreenState extends State<TaskListScreen> {
   List<Task> activeTasks = [];
   List<Task> doneTasks = [];
+  DateTime? _plannedDate;
 
   final TextEditingController _newTaskController = TextEditingController();
 
@@ -37,8 +38,21 @@ class _TaskListScreenState extends State<TaskListScreen> {
     }
   }
 
-  void _addTask() async {
-    final name = _newTaskController.text.trim();
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _plannedDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null && picked != _plannedDate) {
+      setState(() {
+        _plannedDate = picked;
+      });
+    }
+  }
+
+  void _addTask(String name, DateTime? plannedAt) async {
     if (name.isEmpty) return;
 
     final newTask = Task(
@@ -46,43 +60,70 @@ class _TaskListScreenState extends State<TaskListScreen> {
       name: name,
       description: '',
       status: 'TODO',
-      plannedAt: null,
+      plannedAt: plannedAt,
     );
 
     try {
-      debugPrint('Добавление задачи: $newTask');
-      await widget.taskApi.addTask(newTask);
+      Task resultTask = await widget.taskApi.addTask(newTask);
       setState(() {
-        activeTasks.add(newTask);
+        activeTasks.add(resultTask);
         _newTaskController.clear();
+        _plannedDate = null;
       });
     } catch (e) {
       debugPrint('Ошибка добавления задачи: $e');
     }
   }
 
-  void _toggleStatus(Task task, bool? checked) {
-    String newStatus = checked == true ? 'DONE' : 'TODO';
+  void _toggleStatus(Task task, bool? checked) async {
+  String newStatus = checked == true ? 'DONE' : 'TODO';
+  String previousStatus = task.status;
+  Task? originalTask; // Для хранения оригинальной задачи перед изменением UI
+  int? originalIndex; // Добавляем переменную для хранения индекса
+
+  setState(() {
+    if (checked == true) {
+      originalIndex = activeTasks.indexOf(task); // Получаем индекс перед удалением
+      originalTask = task; // Сохраняем оригинал
+      activeTasks.removeWhere((t) => t.id == task.id);
+      doneTasks.add(task.copyWith(status: newStatus)); // Обновляем UI
+    } else {
+      originalIndex = doneTasks.indexOf(task); // Получаем индекс перед удалением
+      originalTask = task; // Сохраняем оригинал
+      doneTasks.removeWhere((t) => t.id == task.id);
+      activeTasks.insert(0, task.copyWith(status: newStatus)); // Обновляем UI
+    }
+  });
+
+  final snackBarController = ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text('Задача ${checked == true ? 'выполнена' : 'возвращена'}!'),
+      duration: const Duration(seconds: 3),
+      action: SnackBarAction(
+        label: 'Отменить',
+        onPressed: () {
+          setState(() {
+            if (checked == true && originalIndex != null) {
+              doneTasks.removeWhere((t) => t.id == task.id);
+              activeTasks.insert(originalIndex!, originalTask!.copyWith(status: previousStatus)); // Вставляем на прежнее место
+            } else if (originalIndex != null) {
+              activeTasks.removeWhere((t) => t.id == task.id);
+              doneTasks.insert(originalIndex!, originalTask!.copyWith(status: previousStatus)); // Вставляем на прежнее место
+            }
+          });
+        },
+      ),
+    ),
+  );
+
+  // Ждем закрытия SnackBar
+  final reason = await snackBarController.closed;
+
+  // Если SnackBar закрылся не из-за действия "Отменить", отправляем изменения на бэк
+  if (reason != SnackBarClosedReason.action) {
     widget.taskApi.setTaskStatus(task.id, newStatus);
-
-    final updated = Task(
-      id: task.id,
-      name: task.name,
-      description: task.description,
-      status: newStatus,
-      plannedAt: task.plannedAt,
-    );
-
-    setState(() {
-      if (checked == true) {
-        activeTasks.removeWhere((t) => t.id == task.id);
-        doneTasks.add(updated);
-      } else {
-        doneTasks.removeWhere((t) => t.id == task.id);
-        activeTasks.add(updated);
-      }
-    });
   }
+}
 
   void _reorderActiveTasks(int oldIndex, int newIndex) {
     setState(() {
@@ -93,6 +134,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   }
 
   void _dismissTask(int index) {
+    widget.taskApi.deleteTask(activeTasks[index].id);
     setState(() => activeTasks.removeAt(index));
   }
 
@@ -129,7 +171,12 @@ class _TaskListScreenState extends State<TaskListScreen> {
             ),
           ),
           const Divider(),
-          TaskInputField(controller: _newTaskController, onAdd: _addTask),
+          TaskInputField(
+            controller: _newTaskController,
+            onAdd: _addTask,
+            selectedDate: _plannedDate,
+            onSelectDate: () => _selectDate(context),
+          ),
         ],
       ),
     );

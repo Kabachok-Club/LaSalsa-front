@@ -1,17 +1,17 @@
 import 'dart:convert';
-import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import '../models/task.dart';
 
-
 class TaskApi {
   final http.Client client;
-  TaskApi({ required this.client});
-  static const String _baseUrl = 'http://localhost:8008';
-  static const String _tasksEndpoint = '/tasks';
+  TaskApi({required this.client});
+  static const String _url = 'http://localhost:8000/tasks';
+  
+
+  
 
   Future<List<Task>> fetchTasks() async {
-    final response = await client.get(Uri.parse('$_baseUrl$_tasksEndpoint'));
+    final response = await client.get(Uri.parse(_url));
     if (response.statusCode == 200) {
       final List<dynamic> jsonData = json.decode(response.body);
       return jsonData.map((task) => Task.fromJson(task)).toList();
@@ -20,35 +20,61 @@ class TaskApi {
     }
   }
 
-  Future<void> addTask(Task task) async {
+  Future<Task> addTask(Task task) async {
     final response = await client.post(
-      Uri.parse('$_baseUrl$_tasksEndpoint'),
+      Uri.parse(_url),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
         'name': task.name,
         'description': task.description,
         'status': task.status,
-        'created_at': DateTime.now().toIso8601String(),
+        'planned_at': task.plannedAt?.toIso8601String(),
       }),
     );
     if (response.statusCode != 201) {
       throw Exception('Failed to add task');
     }
+    return Task.fromJson(json.decode(response.body));
   }
 
   Future<Task> getTaskDetails(String taskId) async {
-    final response = await client.get(Uri.parse('$_baseUrl$_tasksEndpoint/$taskId'));
+    final response = await client.get(
+      Uri.parse('$_url/$taskId'),
+    );
     if (response.statusCode != 200) {
       throw Exception('Failed to load task details');
     }
-    debugPrint('Response body: ${response.body}');
     return Task.fromJson(json.decode(response.body));
   }
 
   Future<void> setTaskStatus(String taskId, String taskStatus) async {
-    final response = await client.patch(Uri.parse('$_baseUrl$_tasksEndpoint/$taskId/status?status=$taskStatus'));
+    final response = await client.patch(
+      Uri.parse('$_url/status'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'status': taskStatus,
+        'id': taskId,
+      }),
+    );
     if (response.statusCode != 200) {
       throw Exception('Failed to update status');
+    }
+  }
+
+  Future<void> deleteTask(String taskId) async {
+    final response = await client.delete(
+      Uri.parse('$_url/'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'id': taskId,
+      }),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete task');
     }
   }
 }
