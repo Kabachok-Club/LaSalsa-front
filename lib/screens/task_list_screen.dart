@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:kabachok_lasalsa_front/api/task_api.dart';
 import '../models/task.dart';
@@ -76,54 +77,66 @@ class _TaskListScreenState extends State<TaskListScreen> {
   }
 
   void _toggleStatus(Task task, bool? checked) async {
-  String newStatus = checked == true ? 'DONE' : 'TODO';
-  String previousStatus = task.status;
-  Task? originalTask; // Для хранения оригинальной задачи перед изменением UI
-  int? originalIndex; // Добавляем переменную для хранения индекса
+    String newStatus = checked == true ? 'DONE' : 'TODO';
+    String previousStatus = task.status;
+    Task? originalTask; // Для хранения оригинальной задачи перед изменением UI
+    int? originalIndex; // Добавляем переменную для хранения индекса
 
-  setState(() {
-    if (checked == true) {
-      originalIndex = activeTasks.indexOf(task); // Получаем индекс перед удалением
-      originalTask = task; // Сохраняем оригинал
-      activeTasks.removeWhere((t) => t.id == task.id);
-      doneTasks.add(task.copyWith(status: newStatus)); // Обновляем UI
-    } else {
-      originalIndex = doneTasks.indexOf(task); // Получаем индекс перед удалением
-      originalTask = task; // Сохраняем оригинал
-      doneTasks.removeWhere((t) => t.id == task.id);
-      activeTasks.insert(0, task.copyWith(status: newStatus)); // Обновляем UI
-    }
-  });
+    setState(() {
+      if (checked == true) {
+        originalIndex = activeTasks.indexOf(
+          task,
+        ); // Получаем индекс перед удалением
+        originalTask = task; // Сохраняем оригинал
+        activeTasks.removeWhere((t) => t.id == task.id);
+        doneTasks.add(task.copyWith(status: newStatus)); // Обновляем UI
+      } else {
+        originalIndex = doneTasks.indexOf(
+          task,
+        ); // Получаем индекс перед удалением
+        originalTask = task; // Сохраняем оригинал
+        doneTasks.removeWhere((t) => t.id == task.id);
+        activeTasks.insert(0, task.copyWith(status: newStatus)); // Обновляем UI
+      }
+    });
 
-  final snackBarController = ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text('Задача ${checked == true ? 'выполнена' : 'возвращена'}!'),
-      duration: const Duration(seconds: 3),
-      action: SnackBarAction(
-        label: 'Отменить',
-        onPressed: () {
-          setState(() {
-            if (checked == true && originalIndex != null) {
-              doneTasks.removeWhere((t) => t.id == task.id);
-              activeTasks.insert(originalIndex!, originalTask!.copyWith(status: previousStatus)); // Вставляем на прежнее место
-            } else if (originalIndex != null) {
-              activeTasks.removeWhere((t) => t.id == task.id);
-              doneTasks.insert(originalIndex!, originalTask!.copyWith(status: previousStatus)); // Вставляем на прежнее место
-            }
-          });
-        },
+    final snackBarController = ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Задача ${checked == true ? 'выполнена' : 'возвращена'}!',
+        ),
+        duration: const Duration(seconds: 3),
+        action: SnackBarAction(
+          label: 'Отменить',
+          onPressed: () {
+            setState(() {
+              if (checked == true && originalIndex != null) {
+                doneTasks.removeWhere((t) => t.id == task.id);
+                activeTasks.insert(
+                  originalIndex!,
+                  originalTask!.copyWith(status: previousStatus),
+                ); // Вставляем на прежнее место
+              } else if (originalIndex != null) {
+                activeTasks.removeWhere((t) => t.id == task.id);
+                doneTasks.insert(
+                  originalIndex!,
+                  originalTask!.copyWith(status: previousStatus),
+                ); // Вставляем на прежнее место
+              }
+            });
+          },
+        ),
       ),
-    ),
-  );
+    );
 
-  // Ждем закрытия SnackBar
-  final reason = await snackBarController.closed;
+    // Ждем закрытия SnackBar
+    final reason = await snackBarController.closed;
 
-  // Если SnackBar закрылся не из-за действия "Отменить", отправляем изменения на бэк
-  if (reason != SnackBarClosedReason.action) {
-    widget.taskApi.setTaskStatus(task.id, newStatus);
+    // Если SnackBar закрылся не из-за действия "Отменить", отправляем изменения на бэк
+    if (reason != SnackBarClosedReason.action) {
+      widget.taskApi.setTaskStatus(task.id, newStatus);
+    }
   }
-}
 
   void _reorderActiveTasks(int oldIndex, int newIndex) {
     setState(() {
@@ -146,8 +159,32 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser!;
+    final String userDisplayName =
+        user.displayName ?? user.email ?? 'Пользователь';
     return Scaffold(
-      appBar: AppBar(title: const Text('LaSalsa – задачи')),
+      appBar: AppBar(
+        title: const Text('LaSalsa – задачи'),
+        actions: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Text(
+                userDisplayName,
+                style: const TextStyle(fontSize: 16), // Можете настроить стиль
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Выйти',
+            onPressed: () {
+              // Просто вызываем signOut, а AuthGate сделает остальное
+              FirebaseAuth.instance.signOut();
+            },
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(

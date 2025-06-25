@@ -11,7 +11,7 @@ void main() {
 
     setUp(() {
       mockClient = MockClient();
-      taskApi = TaskApi(client: mockClient);
+      taskApi = TaskApi();
     });
 
     test('fetchTasks returns a list of tasks', () async {

@@ -47,5 +47,19 @@ class Task {
         ? DateTime.parse(json['closed_at'])
         : null,
     );
+
+    
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'description': description,
+      'status': status,
+      // Если дата не null, преобразуем ее в строку нужного формата
+      'planned_at': plannedAt?.toIso8601String(),
+    };
+    // Заметьте, я не включаю 'id', так как обычно при создании новой
+    // задачи ID присваивается сервером. Если ваш сервер ожидает ID,
+    // то его тоже нужно добавить.
   }
 }
