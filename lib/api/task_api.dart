@@ -1,80 +1,71 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+
+import 'package:flutter/cupertino.dart';
+
 import '../models/task.dart';
+import 'auth_intercerptor.dart';
+import 'package:dio/dio.dart';
 
 class TaskApi {
-  final http.Client client;
-  TaskApi({required this.client});
+  final Dio _dio;
+
   static const String _url = 'http://localhost:8000/tasks';
   
-
+TaskApi() : _dio = Dio(BaseOptions(baseUrl: _url)) {
+    // Вот где происходит магия: мы добавляем наш перехватчик
+    _dio.interceptors.add(AuthInterceptor());
+  }
   
 
   Future<List<Task>> fetchTasks() async {
-    final response = await client.get(Uri.parse(_url));
-    if (response.statusCode == 200) {
-      final List<dynamic> jsonData = json.decode(response.body);
-      return jsonData.map((task) => Task.fromJson(task)).toList();
-    } else {
-      throw Exception('Failed to load tasks');
-    }
+  try {
+    // Внутри try мы пишем только "счастливый" сценарий
+    final response = await _dio.get('/'); 
+    
+    // Если мы дошли до этой строки, значит статус ответа УЖЕ успешный (2xx).
+    // Нет нужды в if (response.statusCode == 200)
+    
+    final List<dynamic> jsonData = response.data;
+    return jsonData.map((taskJson) => Task.fromJson(taskJson)).toList();
+
+  } on DioException catch (e) {
+    // Если сервер вернул ошибку (4xx, 5xx), мы попадем сюда
+    debugPrint('Ошибка Dio при загрузке задач: ${e.response?.statusCode}');
+    debugPrint('Сообщение от сервера: ${e.response?.data}');
+    
+    // Мы можем обработать ошибку или выбросить свое, более понятное исключение
+    throw Exception('Не удалось загрузить задачи.');
   }
+}
 
   Future<Task> addTask(Task task) async {
-    final response = await client.post(
-      Uri.parse(_url),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'name': task.name,
-        'description': task.description,
-        'status': task.status,
-        'planned_at': task.plannedAt?.toIso8601String(),
-      }),
-    );
-    if (response.statusCode != 201) {
-      throw Exception('Failed to add task');
-    }
-    return Task.fromJson(json.decode(response.body));
+   final response = await _dio.post('/', data: task.toJson());
+   return Task.fromJson(response.data);
   }
 
   Future<Task> getTaskDetails(String taskId) async {
-    final response = await client.get(
-      Uri.parse('$_url/$taskId'),
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to load task details');
-    }
-    return Task.fromJson(json.decode(response.body));
+    final response = await _dio.get('/$taskId');
+    
+    return Task.fromJson(response.data);
   }
 
   Future<void> setTaskStatus(String taskId, String taskStatus) async {
-    final response = await client.patch(
-      Uri.parse('$_url/status'),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: jsonEncode(<String, String>{
+    try {
+      await _dio.patch('/status', data: {
         'status': taskStatus,
-        'id': taskId,
-      }),
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to update status');
+        'id': taskId
+      });
+    } on DioException catch (e) {
+      debugPrint('Не удалось обновить задачу ${e.response?.statusCode}');
     }
+
   }
 
   Future<void> deleteTask(String taskId) async {
-    final response = await client.delete(
-      Uri.parse('$_url/'),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: jsonEncode(<String, String>{
-        'id': taskId,
-      }),
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to delete task');
+    try{
+      await _dio.delete('/', data: {'id': taskId});
+    } on DioException catch (e) {
+      debugPrint('Ошибка при удалении задачи: ${e.response?.statusCode}');
+      throw Exception('Не удалось удалить задачу.');
     }
   }
 }
