@@ -53,6 +53,19 @@ class _TaskListScreenState extends State<TaskListScreen> {
     }
   }
 
+  void _updateTaskInList(Task updatedTask) {
+    setState(() {
+      activeTasks.removeWhere((t) => t.id == updatedTask.id);
+      doneTasks.removeWhere((t) => t.id == updatedTask.id);
+
+      if (updatedTask.status == 'DONE') {
+        doneTasks.add(updatedTask);
+      } else {
+        activeTasks.add(updatedTask);
+      }
+    });
+  }
+
   void _addTask(String name, DateTime? plannedAt) async {
     if (name.isEmpty) return;
 
@@ -197,12 +210,14 @@ class _TaskListScreenState extends State<TaskListScreen> {
                   onDismiss: _dismissTask,
                   onReorder: _reorderActiveTasks,
                   taskApi: widget.taskApi,
+                  onTaskUpdated: _updateTaskInList,
                 ),
                 const SizedBox(height: 24),
                 CompletedTaskList(
                   tasks: doneTasks,
                   onStatusToggle: _toggleStatus,
                   taskApi: widget.taskApi,
+                  onTaskUpdated: _updateTaskInList,
                 ),
               ],
             ),

@@ -7,12 +7,14 @@ class CompletedTaskList extends StatelessWidget {
   final List<Task> tasks;
   final void Function(Task task, bool? checked) onStatusToggle;
   final TaskApi taskApi;
+  final Function(Task updatedTask) onTaskUpdated; // Добавляем callback
 
   const CompletedTaskList({
     super.key,
     required this.tasks,
     required this.onStatusToggle,
     required this.taskApi,
+    required this.onTaskUpdated,
   });
 
   @override
@@ -25,6 +27,7 @@ class CompletedTaskList extends StatelessWidget {
           task: task,
           onStatusToggle: (checked) => onStatusToggle(task, checked),
           taskApi: taskApi,
+          onTaskUpdated: onTaskUpdated,
         ),
       ).toList(),
     );

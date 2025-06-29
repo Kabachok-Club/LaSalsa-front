@@ -22,9 +22,11 @@ class _LoginScreenState extends State<LoginScreen> {
       // Навигация произойдет автоматически благодаря AuthGate
     } on FirebaseAuthException catch (e) {
       // Показываем ошибку пользователю
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Ошибка входа: ${e.message}')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Ошибка входа: ${e.message}')));
+      }
     }
   }
 
@@ -35,9 +37,11 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text.trim(),
       );
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка регистрации: ${e.message}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка регистрации: ${e.message}')),
+        );
+      }
     }
   }
 
