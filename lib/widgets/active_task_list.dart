@@ -9,6 +9,7 @@ class ActiveTaskList extends StatelessWidget {
   final void Function(Task task, bool? checked) onStatusToggle;
   final void Function(int oldIndex, int newIndex) onReorder;
   final void Function(int index) onDismiss;
+  final Function(Task updatedTask) onTaskUpdated; // Добавляем callback
   final TaskApi taskApi;
 
   const ActiveTaskList({
@@ -18,6 +19,7 @@ class ActiveTaskList extends StatelessWidget {
     required this.onReorder,
     required this.onDismiss,
     required this.taskApi,
+    required this.onTaskUpdated,
   });
 
   @override
@@ -41,6 +43,7 @@ class ActiveTaskList extends StatelessWidget {
                   task: tasks[index],
                   onStatusToggle: (checked) => onStatusToggle(tasks[index], checked),
                   taskApi: taskApi,
+                  onTaskUpdated: onTaskUpdated,
                 ),
               ),
           ],
